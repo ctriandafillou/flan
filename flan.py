@@ -8,6 +8,16 @@ import matplotlib.pyplot as plt
 import pandas as pd
 from IPython.display import Image
 
+tableau20 = [(31, 119, 180), (174, 199, 232), (255, 127, 14), (255, 187, 120),    
+             (44, 160, 44), (152, 223, 138), (214, 39, 40), (255, 152, 150),    
+             (148, 103, 189), (197, 176, 213), (140, 86, 75), (196, 156, 148),    
+             (227, 119, 194), (247, 182, 210), (127, 127, 127), (199, 199, 199),    
+             (188, 189, 34), (219, 219, 141), (23, 190, 207), (158, 218, 229)]
+
+for i in range(len(tableau20)):    
+    r, g, b = tableau20[i]    
+    tableau20[i] = (r / 255., g / 255., b / 255.)
+
 def spectrum_plot(fname, species):
     """Generate a emission spectrum (wavelength vs. intensity)
     
@@ -57,6 +67,32 @@ def timecourse_plot(fname, species, temp, fit):
     #print 'Range: ' + str(np.max(anisotropy) - np.min(anisotropy))
     #print 'Mean: %f +/- %f' % (np.mean(anisotropy), np.std(anisotropy))
     return fig, ax
+    
+def multiplot(files, labels):
+    """Generate a one row, multi-column figure for comparison between different timecourses.
+    
+    files is a list of filenames in the current directory. lables is a list of strings
+    which will be the labels for each set of data in the legend of the plot.
+    All plots generated will be anisotropy vs time, assuming a common x-axis.
+    """
+    assert len(files) == len(labels)
+    data = np.loadtxt(files[0], skiprows=2)
+    data = data[:, :2]
+    for i in range(1, len(files)):
+        x = np.loadtxt(files[i], skiprows=2)
+        data = np.column_stack((data, x[:,1]))
+    
+    fig, ax = plt.subplots(figsize=(10, 8))
+    for i in range(1, len(files)+1):
+        ax.scatter(data[:, 0], data[:, i], label=labels[i-1], c=tableau20[i])
+        ax.plot(data[:, 0], generate_fit(data[:, 0], data[:, i], 1), c=tableau20[i])
+        ax.text(0.5, np.amin(data[:, 1:])-.03+i*0.008, s=str(np.polyfit(data[:, 0], data[:, i], 1)), color=tableau20[i])
+    plt.legend(loc=0)
+    plt.xlim(0,max(data[:, 0]))
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.yaxis.set_ticks_position('left')
+    ax.xaxis.set_ticks_position('bottom')
 
 def an_timepoint(fname):
     """Generate an anisotropy single point value based on four individual measurements.
